@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Button } from "react-bootstrap";
-import PossessionsTable from "../components/PossessionsTable";
+import PossessionsTable from "./PossessionsPage";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [possessions, setPossessions] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [patrimoineValue, setPatrimoineValue] = useState(0);
+  // const [patrimoineValue, setPatrimoineValue] = useState(0);
 
   useEffect(() => {
     axios
-      .get("/data/data.json")
+      .get("./data/data.json")
       .then((response) => {
         const patrimoineData = response.data.find(
           (item) => item.model === "Patrimoine"
@@ -24,43 +26,36 @@ const Dashboard = () => {
       .catch((error) => console.error("Error fetching data:", error));
   }, []);
 
-  const getValeur = (possession, date) => {
-    if (possession.dateFin && new Date(possession.dateFin) < date) {
-      return 0;
-    }
-    if (possession.tauxAmortissement) {
-      const startDate = new Date(possession.dateDebut);
-      const age = Math.floor((date - startDate) / (1000 * 60 * 60 * 24 * 365));
-      return Math.max(
-        0,
-        possession.valeur -
-          possession.valeur * (possession.tauxAmortissement / 100) * age
-      );
-    }
-    if (possession.valeurConstante !== undefined) {
-      return possession.valeurConstante;
-    }
-    return possession.valeur;
+  const updatePossession = (index, updatedValue) => {
+    const updatedPossessions = possessions.map((possession, i) =>
+      i === index ? { ...possession, valeur: updatedValue } : possession
+    );
+    setPossessions(updatedPossessions);
   };
 
   const calculatePatrimoineValue = () => {
-    const value = possessions.reduce(
-      (acc, possession) => acc + getValeur(possession, selectedDate),
-      0
-    );
-    setPatrimoineValue(value);
+    // Créez un objet Patrimoine et calculez la valeur
+    // const patrimoine = new Patrimoine(null, possessions);
+    // const value = patrimoine.getValeur(selectedDate);
+    // setPatrimoineValue(value);
   };
 
   return (
     <div>
       <h1>Dashboard</h1>
-      <PossessionsTable possessions={possessions} />
+      <PossessionsTable possessions={possessions} onUpdate={updatePossession} />
       <div>
         <DatePicker
           selected={selectedDate}
           onChange={(date) => setSelectedDate(date)}
+          className="border rounded p-2 w-full"
         />
-        <Button onClick={calculatePatrimoineValue}>Valider</Button>
+        <Button
+          onClick={calculatePatrimoineValue}
+          className="bg-blue-500 text-white hover:bg-blue-600"
+        >
+          Valider
+        </Button>
       </div>
       <h2>Valeur du Patrimoine: {patrimoineValue.toFixed(2)}</h2>
     </div>
