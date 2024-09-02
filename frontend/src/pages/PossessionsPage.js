@@ -1,189 +1,139 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { fetchPossessions, closePossession } from "../api";
-import { Modal, Button, Form } from "react-bootstrap";
-import "bootstrap/dist/css/bootstrap.min.css";
+import React, { useState } from "react";
+import { Modal, Button, Form, Table } from "react-bootstrap";
 
-const PossessionPage = () => {
+const PossessionsPage = () => {
+  // État pour les possessions
   const [possessions, setPossessions] = useState([]);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedPossession, setSelectedPossession] = useState(null);
-  const navigate = useNavigate();
 
-  const getPossessions = async () => {
-    const data = await fetchPossessions();
-    setPossessions(data);
+  // État pour le Modal
+  const [showModal, setShowModal] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedPossessionIndex, setSelectedPossessionIndex] = useState(null);
+
+  // État pour les données du formulaire
+  const [formData, setFormData] = useState({
+    libelle: "",
+    valeur: "",
+    tauxAmortissement: "",
+  });
+
+  // Ouvrir/fermer le Modal
+  const handleShow = () => setShowModal(true);
+  const handleClose = () => {
+    setShowModal(false);
+    setIsEditMode(false);
+    setFormData({ libelle: "", valeur: "", tauxAmortissement: "" });
   };
 
-  useEffect(() => {
-    getPossessions();
-    const handlePossessionsUpdated = () => {
-      getPossessions();
-    };
-
-    window.addEventListener("possessionsUpdated", handlePossessionsUpdated);
-    return () => {
-      window.removeEventListener(
-        "possessionsUpdated",
-        handlePossessionsUpdated
-      );
-    };
-  }, []);
-
-  const handleClose = async (id) => {
-    try {
-      await closePossession(id);
-    } catch (error) {
-      console.error("Erreur lors de la clôture de la possession :", error);
-    }
+  // Gérer le changement des valeurs du formulaire
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
   };
 
-  const handleShowAddModal = () => setShowAddModal(true);
-  const handleCloseAddModal = () => setShowAddModal(false);
-
-  const handleShowEditModal = (possession) => {
-    setSelectedPossession(possession);
-    setShowEditModal(true);
+  // Gérer la soumission pour ajouter une nouvelle possession
+  const handleAddSubmit = () => {
+    setPossessions([...possessions, formData]);
+    handleClose();
   };
-  const handleCloseEditModal = () => setShowEditModal(false);
 
-  const handleSaveChanges = () => {
-    handleCloseEditModal();
+  // Gérer la soumission pour modifier une possession existante
+  const handleEditSubmit = () => {
+    const updatedPossessions = possessions.map((possession, index) =>
+      index === selectedPossessionIndex ? formData : possession
+    );
+    setPossessions(updatedPossessions);
+    handleClose();
+  };
+
+  // Ouvrir le Modal en mode édition
+  const handleEdit = (index) => {
+    setSelectedPossessionIndex(index);
+    setFormData(possessions[index]);
+    setIsEditMode(true);
+    handleShow();
   };
 
   return (
-    <div className="container">
-      <h1>Liste des Possessions</h1>
-      <div style={{ textAlign: "center" }}>
-        <button className="create-button" onClick={handleShowAddModal}>
-          Ajouter une Possession
-        </button>
-      </div>
-      <table>
+    <div>
+      <Button onClick={handleShow}>Ajouter une nouvelle possession</Button>
+
+      <Table striped bordered hover>
         <thead>
           <tr>
             <th>Libelle</th>
             <th>Valeur Initiale</th>
-            <th>Date Début</th>
-            <th>Date Fin</th>
-            <th>Taux</th>
-            <th>Valeur Actuelle</th>
+            <th>Taux d'Amortissement</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {possessions.map((possession) => (
-            <tr key={possession.id}>
+          {possessions.map((possession, index) => (
+            <tr key={index}>
               <td>{possession.libelle}</td>
               <td>{possession.valeur}</td>
-              <td>{possession.dateDebut}</td>
-              <td>{possession.dateFin}</td>
-              <td>{possession.taux}%</td>
-              <td>{possession.valeurActuelle.toFixed(2)} Ar</td>
-              <td className="actions">
-                <button
-                  className="modify-button"
-                  onClick={() => handleShowEditModal(possession)}
-                >
+              <td>{possession.tauxAmortissement}</td>
+              <td>
+                <Button variant="warning" onClick={() => handleEdit(index)}>
                   Modifier
-                </button>
-                <button
-                  className="close-button"
-                  onClick={() => handleClose(possession.id)}
-                >
-                  Clôturer
-                </button>
+                </Button>
               </td>
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
 
-      {}
-      <Modal show={showAddModal} onHide={handleCloseAddModal}>
+      <Modal show={showModal} onHide={handleClose}>
         <Modal.Header closeButton>
-          <Modal.Title>Ajouter une Possession</Modal.Title>
+          <Modal.Title>
+            {isEditMode
+              ? "Modifier la possession"
+              : "Ajouter une nouvelle possession"}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
-            <Form.Group className="mb-3" controlId="formLibelle">
-              <Form.Label>Libelle</Form.Label>
-              <Form.Control type="text" placeholder="Entrez le libelle" />
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formValeur">
-              <Form.Label>Valeur Initiale</Form.Label>
-              <Form.Control
-                type="number"
-                placeholder="Entrez la valeur initiale"
-              />
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formDateDebut">
-              <Form.Label>Date de Début</Form.Label>
-              <Form.Control type="date" />
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formTaux">
-              <Form.Label>Taux d'Amortissement</Form.Label>
-              <Form.Control type="number" placeholder="Entrez le taux" />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseAddModal}>
-            Annuler
-          </Button>
-          <Button variant="primary" onClick={handleCloseAddModal}>
-            Ajouter
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {}
-      <Modal show={showEditModal} onHide={handleCloseEditModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Modifier la Possession</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3" controlId="formLibelle">
+            <Form.Group controlId="formLibelle">
               <Form.Label>Libelle</Form.Label>
               <Form.Control
                 type="text"
-                defaultValue={selectedPossession?.libelle}
-                placeholder="Entrez le libelle"
+                name="libelle"
+                value={formData.libelle}
+                onChange={handleChange}
+                placeholder="Entrez le libellé"
               />
             </Form.Group>
-            <Form.Group className="mb-3" controlId="formValeur">
-              <Form.Label>Valeur Initiale</Form.Label>
+            <Form.Group controlId="formValeur">
+              <Form.Label>Valeur</Form.Label>
               <Form.Control
                 type="number"
-                defaultValue={selectedPossession?.valeur}
-                placeholder="Entrez la valeur initiale"
+                name="valeur"
+                value={formData.valeur}
+                onChange={handleChange}
+                placeholder="Entrez la valeur"
               />
             </Form.Group>
-            <Form.Group className="mb-3" controlId="formDateDebut">
-              <Form.Label>Date de Début</Form.Label>
-              <Form.Control
-                type="date"
-                defaultValue={selectedPossession?.dateDebut}
-              />
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formTaux">
-              <Form.Label>Taux d'Amortissement</Form.Label>
+            <Form.Group controlId="formTaux">
+              <Form.Label>Taux d'amortissement</Form.Label>
               <Form.Control
                 type="number"
-                defaultValue={selectedPossession?.taux}
+                name="tauxAmortissement"
+                value={formData.tauxAmortissement}
+                onChange={handleChange}
                 placeholder="Entrez le taux"
               />
             </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseEditModal}>
-            Annuler
+          <Button variant="secondary" onClick={handleClose}>
+            Fermer
           </Button>
-          <Button variant="primary" onClick={handleSaveChanges}>
-            Sauvegarder
+          <Button
+            variant="primary"
+            onClick={isEditMode ? handleEditSubmit : handleAddSubmit}
+          >
+            {isEditMode ? "Enregistrer les modifications" : "Enregistrer"}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -191,4 +141,4 @@ const PossessionPage = () => {
   );
 };
 
-export default PossessionPage;
+export default PossessionsPage;

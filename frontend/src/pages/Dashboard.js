@@ -4,17 +4,18 @@ import { useNavigate } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Button } from "react-bootstrap";
+import Patrimoine from "./Patrimoine";
 import PossessionsTable from "./PossessionsPage";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [possessions, setPossessions] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  // const [patrimoineValue, setPatrimoineValue] = useState(0);
+  const [patrimoineValue, setPatrimoineValue] = useState(0);
 
   useEffect(() => {
     axios
-      .get("./data/data.json")
+      .get("/data/data.json")
       .then((response) => {
         const patrimoineData = response.data.find(
           (item) => item.model === "Patrimoine"
@@ -34,10 +35,9 @@ const Dashboard = () => {
   };
 
   const calculatePatrimoineValue = () => {
-    // Créez un objet Patrimoine et calculez la valeur
-    // const patrimoine = new Patrimoine(null, possessions);
-    // const value = patrimoine.getValeur(selectedDate);
-    // setPatrimoineValue(value);
+    const patrimoine = new Patrimoine(null, possessions);
+    const value = patrimoine.getValeur(selectedDate);
+    setPatrimoineValue(value);
   };
 
   return (
