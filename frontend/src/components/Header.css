@@ -1,0 +1,27 @@
+.brand {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fff !important;
+}
+
+.nav-link-custom {
+  font-size: 1.1rem;
+  color: #fff !important;
+  padding: 0.5rem 1rem;
+}
+
+.nav-link-custom:hover {
+  color: #ffc107 !important; /* Ajout d'une couleur jaune au survol */
+  text-decoration: none;
+}
+
+.active {
+  border-bottom: 2px solid #ffc107; /* Ajoute un soulignement pour l'onglet actif */
+}
+
+@media (max-width: 768px) {
+  .nav-link-custom {
+    text-align: center;
+    padding: 1rem;
+  }
+}
