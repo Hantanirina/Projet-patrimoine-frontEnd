@@ -164,7 +164,7 @@ const PossessionTable = () => {
         {calculatedValue !== null && (
           <div>
             <h3>Valeur Calculée à {selectedDate.toLocaleDateString()} :</h3>
-            <p>{calculatedValue} €</p>
+            <p>{calculatedValue} Ar</p>
           </div>
         )}
       </div>
