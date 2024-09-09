@@ -3,24 +3,29 @@ import { Table, Button, Modal, Form, Alert } from "react-bootstrap";
 import axios from "axios";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { v4 as uuidv4 } from "uuid";
 
 const PossessionTable = () => {
   const [possessions, setPossessions] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [newPossession, setNewPossession] = useState({
+    id: uuidv4(),
     libelle: "",
     valeur: "",
     dateDebut: "",
-    taux: "",
+    tauxAmortissement: "",
   });
+
   const [editPossession, setEditPossession] = useState({
+    id: "",
     libelle: "",
     valeur: "",
     dateDebut: "",
-    taux: "",
+    tauxAmortissement: "",
     dateFin: "",
   });
+
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calculatedValue, setCalculatedValue] = useState(null);
   const [error, setError] = useState("");
@@ -32,11 +37,16 @@ const PossessionTable = () => {
 
   const fetchPossessions = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/possession");
-      setPossessions(response.data);
+      const response = await axios.get(
+        "https://projet-patrimoine-backend.onrender.com/possession"
+      );
+      if (response.data.status === "success") {
+        setPossessions(response.data.data);
+      } else {
+        setError("Erreur lors du chargement des possessions.");
+      }
     } catch (error) {
       setError("Erreur lors du chargement des possessions.");
-      setSuccess("");
     }
   };
 
@@ -44,24 +54,38 @@ const PossessionTable = () => {
     if (
       !newPossession.libelle ||
       !newPossession.valeur ||
-      !newPossession.dateDebut
+      !newPossession.dateDebut ||
+      !newPossession.tauxAmortissement
     ) {
       setError("Veuillez remplir tous les champs.");
       setSuccess("");
       return;
     }
 
+    if (isNaN(parseFloat(newPossession.tauxAmortissement))) {
+      setError("Le taux d'amortissement doit être un nombre.");
+      setSuccess("");
+      return;
+    }
+
     try {
-      await axios.post("http://localhost:3000/possession", newPossession);
+      await axios.post(
+        "https://projet-patrimoine-backend.onrender.com/possession",
+        {
+          ...newPossession,
+          tauxAmortissement: parseFloat(newPossession.tauxAmortissement),
+        }
+      );
       setSuccess("Possession ajoutée avec succès!");
       setError("");
       fetchPossessions();
       setShowAddModal(false);
       setNewPossession({
+        id: uuidv4(),
         libelle: "",
         valeur: "",
         dateDebut: "",
-        taux: "",
+        tauxAmortissement: "",
       });
     } catch (error) {
       setError("Erreur lors de l'ajout de la possession.");
@@ -70,31 +94,35 @@ const PossessionTable = () => {
   };
 
   const handleUpdatePossession = async () => {
-    if (!editPossession.libelle) return;
+    if (!editPossession.libelle || !editPossession.tauxAmortissement) {
+      setError("Veuillez remplir tous les champs.");
+      return;
+    }
+
+    if (isNaN(parseFloat(editPossession.tauxAmortissement))) {
+      setError("Le taux d'amortissement doit être un nombre.");
+      setSuccess("");
+      return;
+    }
 
     try {
-      const encodedLibelle = encodeURIComponent(editPossession.libelle);
-      const updatedPossession = {
-        libelle: editPossession.libelle,
-        valeur: editPossession.valeur,
-        dateDebut: editPossession.dateDebut,
-        taux: editPossession.taux,
-        dateFin: editPossession.dateFin,
-      };
-
       await axios.put(
-        `http://localhost:3000/possession/${encodedLibelle}`,
-        updatedPossession
+        `https://projet-patrimoine-backend.onrender.com/possession/${editPossession.id}`,
+        {
+          ...editPossession,
+          tauxAmortissement: parseFloat(editPossession.tauxAmortissement),
+        }
       );
       setSuccess("Possession mise à jour avec succès!");
       setError("");
       fetchPossessions();
       setShowEditModal(false);
       setEditPossession({
+        id: "",
         libelle: "",
         valeur: "",
         dateDebut: "",
-        taux: "",
+        tauxAmortissement: "",
         dateFin: "",
       });
     } catch (error) {
@@ -103,11 +131,10 @@ const PossessionTable = () => {
     }
   };
 
-  const handleClosePossession = async (libelle) => {
+  const handleClosePossession = async (id) => {
     try {
-      const encodedLibelle = encodeURIComponent(libelle);
       await axios.put(
-        `http://localhost:3000/possession/${encodedLibelle}/close`
+        `https://projet-patrimoine-backend.onrender.com/possession/${id}/close`
       );
       setSuccess("Possession clôturée avec succès!");
       setError("");
@@ -122,10 +149,9 @@ const PossessionTable = () => {
     try {
       const formattedDate = selectedDate.toISOString().split("T")[0];
       const response = await axios.get(
-        `http://localhost:3000/possession/value/${formattedDate}`
+        `https://projet-patrimoine-backend.onrender.com/possession/value/${formattedDate}`
       );
-      // Assuming the server returns { totalValue: number }
-      setCalculatedValue(response.data.totalValue);
+      setCalculatedValue(response.data.data.totalValue);
       setError("");
     } catch (error) {
       setError("Erreur lors du calcul de la valeur.");
@@ -138,7 +164,6 @@ const PossessionTable = () => {
       <h1 className="mb-4">Liste des Possessions</h1>
       {success && <Alert variant="success">{success}</Alert>}
       {error && <Alert variant="danger">{error}</Alert>}
-
       <div className="mb-4">
         <Form>
           <Form.Group controlId="dateSelect">
@@ -152,14 +177,13 @@ const PossessionTable = () => {
           </Form.Group>
         </Form>
       </div>
-
       <div className="mt-auto">
         <Button
           variant="primary"
           onClick={handleCalculateValue}
           className="mb-3"
         >
-          Calcule de la valeur d'une patrimoine
+          Calculer la valeur d'un patrimoine
         </Button>
         {calculatedValue !== null && (
           <div>
@@ -168,7 +192,6 @@ const PossessionTable = () => {
           </div>
         )}
       </div>
-
       <Button
         variant="primary"
         onClick={() => setShowAddModal(true)}
@@ -176,7 +199,6 @@ const PossessionTable = () => {
       >
         Ajouter Possession
       </Button>
-
       <Table striped bordered hover responsive>
         <thead>
           <tr>
@@ -189,40 +211,45 @@ const PossessionTable = () => {
           </tr>
         </thead>
         <tbody>
-          {possessions.map((p) => (
-            <tr key={p.libelle}>
-              <td>{p.libelle}</td>
-              <td>{p.valeur}</td>
-              <td>{new Date(p.dateDebut).toLocaleDateString()}</td>
-              <td>
-                {p.dateFin
-                  ? new Date(p.dateFin).toLocaleDateString()
-                  : "Active"}
-              </td>
-              <td>{p.taux ?? "N/A"}</td>
-              <td>
-                <Button
-                  variant="warning"
-                  onClick={() => {
-                    setEditPossession(p);
-                    setShowEditModal(true);
-                  }}
-                  className="me-2"
-                >
-                  Modifier
-                </Button>
-                <Button
-                  variant="danger"
-                  onClick={() => handleClosePossession(p.libelle)}
-                >
-                  Clôturer
-                </Button>
-              </td>
+          {Array.isArray(possessions) && possessions.length > 0 ? (
+            possessions.map((p) => (
+              <tr key={p.id}>
+                <td>{p.libelle}</td>
+                <td>{p.valeur}</td>
+                <td>{new Date(p.dateDebut).toLocaleDateString()}</td>
+                <td>
+                  {p.dateFin
+                    ? new Date(p.dateFin).toLocaleDateString()
+                    : "Active"}
+                </td>
+                <td>{p.tauxAmortissement ?? "Non défini"}</td>
+                <td>
+                  <Button
+                    variant="warning"
+                    onClick={() => {
+                      setEditPossession(p);
+                      setShowEditModal(true);
+                    }}
+                    className="me-2"
+                  >
+                    Modifier
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onClick={() => handleClosePossession(p.id)}
+                  >
+                    Clôturer
+                  </Button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="6">Aucune possession disponible</td>
             </tr>
-          ))}
+          )}
         </tbody>
       </Table>
-
       {/* Modal for adding new possession */}
       <Modal show={showAddModal} onHide={() => setShowAddModal(false)}>
         <Modal.Header closeButton>
@@ -249,7 +276,10 @@ const PossessionTable = () => {
                 type="text"
                 value={newPossession.valeur}
                 onChange={(e) =>
-                  setNewPossession({ ...newPossession, valeur: e.target.value })
+                  setNewPossession({
+                    ...newPossession,
+                    valeur: e.target.value,
+                  })
                 }
               />
             </Form.Group>
@@ -266,13 +296,16 @@ const PossessionTable = () => {
                 }
               />
             </Form.Group>
-            <Form.Group controlId="formTaux">
+            <Form.Group controlId="formTauxAmortissement">
               <Form.Label>Taux d'Amortissement</Form.Label>
               <Form.Control
                 type="text"
-                value={newPossession.taux}
+                value={newPossession.tauxAmortissement}
                 onChange={(e) =>
-                  setNewPossession({ ...newPossession, taux: e.target.value })
+                  setNewPossession({
+                    ...newPossession,
+                    tauxAmortissement: e.target.value,
+                  })
                 }
               />
             </Form.Group>
@@ -287,15 +320,14 @@ const PossessionTable = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-
-      {/* Modal for editing possession */}
+      {/* Modal for editing a possession */}
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Modifier la Possession</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
-            <Form.Group controlId="formEditLibelle">
+            <Form.Group controlId="formLibelle">
               <Form.Label>Libelle</Form.Label>
               <Form.Control
                 type="text"
@@ -308,7 +340,8 @@ const PossessionTable = () => {
                 }
               />
             </Form.Group>
-            <Form.Group controlId="formEditValeur">
+
+            <Form.Group controlId="formValeur">
               <Form.Label>Valeur</Form.Label>
               <Form.Control
                 type="text"
@@ -321,7 +354,7 @@ const PossessionTable = () => {
                 }
               />
             </Form.Group>
-            <Form.Group controlId="formEditDateDebut">
+            <Form.Group controlId="formDateDebut">
               <Form.Label>Date Début</Form.Label>
               <Form.Control
                 type="date"
@@ -334,28 +367,15 @@ const PossessionTable = () => {
                 }
               />
             </Form.Group>
-            <Form.Group controlId="formEditTaux">
+            <Form.Group controlId="formTauxAmortissement">
               <Form.Label>Taux d'Amortissement</Form.Label>
               <Form.Control
                 type="text"
-                value={editPossession.taux}
+                value={editPossession.tauxAmortissement}
                 onChange={(e) =>
                   setEditPossession({
                     ...editPossession,
-                    taux: e.target.value,
-                  })
-                }
-              />
-            </Form.Group>
-            <Form.Group controlId="formEditDateFin">
-              <Form.Label>Date Fin</Form.Label>
-              <Form.Control
-                type="date"
-                value={editPossession.dateFin || ""}
-                onChange={(e) =>
-                  setEditPossession({
-                    ...editPossession,
-                    dateFin: e.target.value,
+                    tauxAmortissement: e.target.value,
                   })
                 }
               />
@@ -367,7 +387,7 @@ const PossessionTable = () => {
             Fermer
           </Button>
           <Button variant="primary" onClick={handleUpdatePossession}>
-            Mettre à Jour
+            Mettre à jour
           </Button>
         </Modal.Footer>
       </Modal>

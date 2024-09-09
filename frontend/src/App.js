@@ -1,17 +1,5 @@
-// import React from "react";
-// import "bootstrap/dist/css/bootstrap.min.css";
-// import PossessionsTable from "../src/components/PossessionsTable";
-
-// const App = () => {
-//   return (
-//     <div>
-//       <PossessionsTable />
-//     </div>
-//   );
-// };
-
-// export default App;
 // src/App.js
+
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -19,7 +7,7 @@ import {
   Routes,
   Navigate,
 } from "react-router-dom";
-import PossessionPage from "./components/PossessionsTable"; // Assumez que vous avez déjà ce composant
+import PossessionPage from "./components/PossessionsTable";
 import PatrimoinePage from "./components/PatrimoinePage";
 import Header from "./components/Header";
 

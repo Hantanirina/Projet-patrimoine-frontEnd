@@ -1,7 +1,7 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { Navbar, Nav, Container } from "react-bootstrap";
-import "./Header.css"; // Assurez-vous d'avoir un fichier CSS séparé pour personnaliser le style
+import "./Header.css";
 
 const Header = () => {
   return (
@@ -16,16 +16,18 @@ const Header = () => {
             <Nav.Link
               as={NavLink}
               to="/possession"
-              activeClassName="active"
-              className="nav-link-custom"
+              className={({ isActive }) =>
+                isActive ? "nav-link-custom active" : "nav-link-custom"
+              }
             >
               Menu Possessions
             </Nav.Link>
             <Nav.Link
               as={NavLink}
               to="/patrimoine"
-              activeClassName="active"
-              className="nav-link-custom"
+              className={({ isActive }) =>
+                isActive ? "nav-link-custom active" : "nav-link-custom"
+              }
             >
               Menu Patrimoine
             </Nav.Link>
@@ -37,3 +39,5 @@ const Header = () => {
 };
 
 export default Header;
+
+/*n*/

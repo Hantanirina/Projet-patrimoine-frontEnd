@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Button, Form, Row, Col, Container } from "react-bootstrap"; // Ajout des composants Row, Col et Container
+import { Button, Form, Row, Col, Container } from "react-bootstrap";
 import { Line } from "react-chartjs-2";
+// const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
 import {
   Chart as ChartJS,
   LineElement,
@@ -13,9 +14,8 @@ import {
 } from "chart.js";
 import "react-datepicker/dist/react-datepicker.css";
 import DatePicker from "react-datepicker";
-import "./PatrimoinePage.css"; // Ajout d'un fichier CSS personnalisé pour la réactivité
+import "./PatrimoinePage.css";
 
-// Enregistrement des composants Chart.js nécessaires
 ChartJS.register(
   LineElement,
   PointElement,
